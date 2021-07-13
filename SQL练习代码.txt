@@ -1,0 +1,180 @@
+主键：就是元组中唯一标识。
+外键：就是元组中的某一列来自于其他元组的唯一标识。
+索引：普通索引，唯一索引（unique） 聚簇索引（clustered）
+create （unique/clustered）index 索引名 ON 表名<列名>
+drop index 索引名
+创建表、修改表、删除表、
+create table 表名 、alter table 表名 、drop table 表名
+--------------------------------------------------------------
+检索学生表中所有的学生信息
+select * from Student;
+检索学生表中所有的学生姓名及年龄
+select Sname,Sage from Student;
+检索学生表中所有年龄小于19岁的学生的年龄及姓名
+select Sage,Sname from Student where Sage<19;
+检索教师表中所有工资少于1500元或者大于2000元并且是03系的教师姓名
+select Tname from Teacher where (Salary<1500 or Salary>2000)and SD='03';
+检索学过001号课程，或002号课程的学生学号
+select Sno from SC where Cno='001'or Cno='002';
+检索既学过001号课程，又学过002号课程的学生学号
+select Sno from SC S1,SC S2 where S1.Cno='001'and S2.Cno='002';
+检索成绩大于80分的所有学号
+select Sno from SC where Score>80;
+检索成绩大于80分的所有学号，并且过滤重复元组。
+select distinct Sno from SC where Score>80;     #过滤重复元组 distinct
+检索按学号由小到大的顺序显示所有学生的学号及姓名     
+select Sno,Sname from Student order by Sno asc;   #升序   asc
+检索002号课程大于80分的所有同学学号，并按成绩由高到低排序。
+select Sno from SC where Cno='002' and Score>80 order by Score desc; #降序   desc
+检索所有姓张的学生学号及姓名
+select Sno,Sname from Student where Sname like '张%';  #模糊查询 %匹配零个或多个字符
+检索姓名为张某某的所有同学姓名
+select Sname from Student where Sname like '张_ _';    #匹配任意单个字符
+检索所有不姓张的学生姓名
+select Sname from Student where Sname not like '张%';    #模糊查询  非
+------------------------------多表联合查询--------------------------------
+检索'001'号课成绩由高到低的所有学生姓名 (Student,SC)
+select Sname from Student,SC  							#两表连接
+where Student.Sno=SC.Sno and Cno='001' order by Score desc;
+检索按'数据库'课成绩由高到低的所有学生姓名(Student，SC,Course)
+select Sname from Student,SC,Course						#三表连接
+where Student.Sno=SC.Sno and SC.Cno=Course.Cno 
+and Course.Cname='数据库' order by Score desc;
+检索有薪水差额的任意两位老师
+select T1.Tname as Teacher1,T2.Tname as Teacher2       #两表相同属性设置别名
+from Teacher T1,Teacher T2 where T1.Salary>T2.Salary;
+检索年龄有差异的任意两位同学姓名
+select S1.Sname as Stu1,S2.Sname as Stu2
+from Student S1,Student S2 where S1.Sage>S2.Sage;
+检索'001'号课程有成绩差的任意两位同学
+select S1.Sname as Stu1,S2.Sname as Stu2
+from SC S1,SC S2,Course where (S1.Cno=Course.Cno and S2.Cno=Course.Cno);
+and S1.Score>S2.Score;
+检索'001'号课成绩比'002'号课成绩高的所有学生的学号
+select Sno from SC S1,SC S2 where S1.Sno=S2.Sno      #别名查询 一定要带等值连接
+and S1.Cno='001'and S2.Cno='002'and S1.Score>S2.Score;
+----------------------------利用 SQL 语言进行增-删-改---------------------
+索引Student表中学生姓名中最后一个字为伟的同学新增到St(Sno,Sname)表中
+Insert into St(Sno,Sname) select Sno,Sname from Student where Sname like '%伟';#插入
+将Student表中检索到的同学平均成绩新增到St(Sno,Sname,avgScore)表中。
+Insert into St(Sno,Sname,avgScore) select Sno,Sname,Avg(Score) from Student，SC
+where Student.Sno=SC.Sno group by Student.Sno;        #聚焦函数和group by 分组
+删除Student表中自动控制系的所有学生 						#简单的嵌套子查询
+delete * from Student where Dname in(select Dname from Dept where Dname='自动控制');
+删除有四门不及格课程的所有同学
+deleet * from Student where Sno in(select Sno from SC where Score<60 
+	group by Sno having Count(*)>=4 );   #in嵌套子查询 分组 和聚焦count函数
+将所有计算机系的教师工资上调10%
+update Teacher set Salary=Salary*1.1 where Dname in(  #元组update更新命令
+	select Dname from Dept where Dname='计算机系');
+当某同学001号课的成绩低于该课程平均成绩时，将该同学该门课成绩提高5%
+update SC set Score=score*1.05 						  #复杂的条件控制更新
+	where Cno='001'and Score<some(select Avg(Score) from SC where Cno='001');
+在学生表Student(Sno,Sname,Ssex,Sage,Dname,Sclass)基础上添加两列saddr，PID
+alter table Student add saddr char[30],PID char[18]; #修改表列数
+将学生表Student中Sname列的数据类型添加两个字符
+alter table Student modify Sname char[10];    #修改表数据类型
+删除学生姓名必须取唯一值的约束
+alter table Student drop unique(Sname);
+撤销学生表Student
+Drop table Student;
+------------------------------DDL和DML 子查询运用------------------------------
+列出张三、王五同学的所有信息
+select * from Student where Sname in('张三','王五');  #IN子查询结果聚合
+#等价于 select * from Student where Sname='张三' or Sname='王五';
+列出选修了001号课程的同学学号和姓名
+select Sno,Sname from Student where Sno in(select Sno from SC where Cno='001');
+求既学过001号课程，又学过002号课程的学生的学号
+select Sno from Student where Cno='001' and Sno in(			#非相关子查询
+	select Sno from SC where Cno='002');  
+列出没学过李明老师讲授课程的所有同学的姓名
+select Sname from Student where Sno not in(select Sno from SC,Teacher T,Course C 
+	where SC.Cno=C.Cno and T.Tno=C.Tno and T.Tname='李明'); #内外双层非相关子查询
+求学过001号课程的同学的姓名
+selct Sname from Student stud where Sno in(   #相关子查询，子查询中有外层传参
+	select Sno from SC where Sno=Stud.Sno Cno='001');
+找出工资最低的教师姓名					#all是真真才真
+select Tname from Teacher where Salary<=all(select Salary from Teacher);#all子查询
+找出001号课成绩不是最高的所有学生的学号                #some子查询 #some是一真则真
+select Sno from SC where Cno='001'and Score<some(select Sno from SC where Cno='001');
+找出所有课程都不及格的学生姓名(相关子查询)     
+select Sname from Student where 60>all(select Score from SC where Sno=Student.Sno);
+找出001号课成绩最高的所有学生的学号
+select Sno from SC where Cno='001'and Score>=all(
+	select Score from SC where Cno='001'); 
+找出980301号同学成绩最低的课程号
+select Cno from SC where Sno='980301' and Score<=all(
+	select Score from SC where Sno='980301');  #非相关子查询
+找出张三同学成绩最低的课程号
+select Cno from SC,Student where Sname='张三' and SC.Sno=Student.Sno 
+and Score>=all(select Score from SC where Sno=Student.Sno); #相关子查询
+求工资小于任一老师的教师姓名
+select Tname from Teacher where Salary<all(select Salary from Teacher);
+检索选修了赵三老师主将课程的所有同学的姓名
+select distinct Sname from Student where exists(select * from SC,Course,Teacher
+where SC.Cno=Course.Cno and Student.Sno=Course.Sno 
+and Course.Tno=Teacher.Tno and Tname='赵三'); 
+#等价于 select distinct Sname from Student SC,Course,Teacher 
+#	where SC.Cno=Course.Cno and Student.Sno=Course.Sno 
+#	and Course.Tno=Teacher.Tno and Tname='赵三'); #不加not的exists谓语可以不用exists
+检索学过001号教师主讲的所有课程的所有同学的姓名  #not exists 子查询
+select Sname from Student where not exists(select * from Course where Tno='001'and
+not exists select * from SC where Student.Sno=Course.Sno and Cno=Student.Cno);
+列出没学过李明老师讲授任何一门课程的所有同学的姓名
+select Sname from Student where not exists(select *from Course,SC,Teacher 
+where Course.Cno=SC.Cno and SC.Sno=Student.Sno and 
+Course.Tno=Teacher.Tno and Tname='李明');
+列出至少学过980301号同学学过所有课程的同学的学号
+select distinct Sno from SC SC1 where not exists(    #三层嵌套
+	select *from SC SC2 where SC2.Sno='980301'and not exists(
+		select *from SC where Cno=SC2.Cno and Sno=SC1.Sno));  #到这一步已经看不懂了
+-----------------------------结果计算与聚集函数--------------------------------
+求有差额的任意两位老师的薪水差额
+select T1.Tname as TR1,T2.Tname as TR2,T1.Salary-T2.Salary
+from Teacher T1, Teacher T2 where T1.Salary>T2.Salary; #where 是结果计算的触发条件
+依据学生年龄求学生的出生年份，当前是2021年
+select S.Sno,S.Sname,2021-S.Sage+1 as Syear from Student S;
+求计算机系教师的工资总额							#Sum()聚集函数
+select Sum(Salary) from Dept,Teacher T where T.Dno=Dept.Dno and Dname='计算机'; 
+求数据库课程的平均成绩							#Avg()聚集函数
+select Avg(Score) from SC,Course C where SC.Cno=C.Cno and Cname='数据库');
+求数据库课程的最高学生成绩							#Max()聚集函数
+select Max(Score) from SC,Course C where SC.Cno=C.Cno and Cname='数据库');
+求数据库最低课程的学生的学号						#Min()聚集函数
+select distinct Sno from SC,Course C where Sno in(
+	select Min(Score)from SC,Course C where SC.Cno=C.Cno and Cname='数据库');
+----------------------------------Group by 分组-----------------------------------
+求每一个学生的总课程平均成绩
+select Sno,Avg(Score) from SC where group by Sno;
+求每一门课程所有学生的平均成绩
+select Cno,Avg(Score) from SC where group by Cno;
+求不及格课程超过两门的同学的学号					#having 分组过滤
+select Sno from SC where Score<60 group by Sno having Count(*)>2;
+求有10个人以上不及格的课程号
+select Cno from SC where Score<60 group by Cno having Count(*)>10
+求有两门以上不及格课程同学的学号及其不及格课程平均成绩
+select Sno,Avg(Score) from SC where Score<60 group by Sno having Count(*)>2;
+求有两门以上不及格课程同学的学号以及所有课程平均成绩
+select Sno,Avg(Score) from SC where Sno in(select Sno,Avg(Score) from SC 
+	where Score<60 group by Sno having Count(*)>2; )
+--------------------------------视图 view-----------------------------------------
+定义一个视图CompStud为计算机系的学生，通过该视图可以将Student表中其他系的学生屏蔽掉
+create view CompStud as(select * from Student where Dno in(select Dno from Dept
+	where Dname='计算机'));
+定义一个视图Teach为教师任课的情况，把Teacher表中的个人隐私方面的信息，如工资等屏蔽掉，仅仅
+反馈其教哪门课程及其学分等。
+create view Teach as(select T.Tname,C.Cname.Credit from Teacher T,Course C 
+	where T.Tno=C.Tno);
+索引主讲数据库课程的教师姓名，我们可以使用Teach
+select T.Tname from Teach T where T.Cname='数据库';
+检索计算机系的所有学生，我们可以用CompStud
+select * from CompStud;
+检索计算机系的年龄小于20岁的所有学生，我们可以使用CompStud
+select * from CompStud where Sage<20;
+定义视图StudStat,描述学生的平均成绩，最高成绩，最低成绩等
+create view StudStat(Sno,Sname,AvgS,MinS,MaxS,CNT) as(select Sno,Sname,Avg(Score),
+Min(Score),Count(*) from Student S,SC where S.Sno=SC.Sno group by S.Sno);
+基于视图StudStat检索张三的平均成绩
+select Sname，AvgS from StudStat where Sname='张三';
+撤销视图Teach
+Drop view Teach
